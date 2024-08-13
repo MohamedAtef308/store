@@ -18,7 +18,7 @@ async function SingleProductPage( {params}: SingleProductPageProps) {
       <section>
         <BreadCrumbs name={product.name} />
         <div className="mt-6 grid gap-y-8 lg:grid-cols-2 lg:gap-x-16">
-          <div className="relative h-full">
+          <div className="relative h-96 lg:h-full">
             <Image
               src={product.image}
               alt={product.name}
