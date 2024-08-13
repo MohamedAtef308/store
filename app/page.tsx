@@ -1,16 +1,13 @@
-import LoadingContainer from "@/components/global/LoadingContainer";
-import FeaturedProducts from "@/components/home/FeaturedProducts";
-import Hero from "@/components/home/Hero";
-import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
 
 function HomePage() {
   return (
-    <>
-      <Hero/>
-      <Suspense fallback={<LoadingContainer/>}>
-      <FeaturedProducts/>
-      </Suspense>
-    </>
+    <div>
+      <h1 className="text-3xl">HomePage</h1>
+      <Button variant="outline" size="lg" className="capitalize m-8">
+        Click Here
+      </Button>
+    </div>
   );
 }
 
