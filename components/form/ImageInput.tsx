@@ -6,11 +6,20 @@ const name = "image"
 function ImageInput() {
   
     return (
-    <div className="mb-2">
-        <Label htmlFor={name} className="capitalize">Image</Label>
-        <Input name={name} id={name} type="file" required accept="image/*"/>
-    </div>
-  )
+      <div className="mb-2">
+        <Label htmlFor={name} className="capitalize">
+          Image
+        </Label>
+        <Input
+          name={name}
+          id={name}
+          type="file"
+          required
+          accept="image/*"
+          className="cursor-pointer"
+        />
+      </div>
+    );
 }
 
 export default ImageInput

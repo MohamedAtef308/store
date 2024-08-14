@@ -12,7 +12,7 @@ type FormContainerProps = {
 
 const initialState = { message: "" };
 
-function FormContainer({ children, action }: FormContainerProps) {
+function FormContainer({ action, children }: FormContainerProps) {
   const { toast } = useToast();
   const [state, formAction] = useFormState(action, initialState);
 
