@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { adminLinks, navLinks } from "@/utils/links";
+import { navLinks } from "@/utils/links";
 import UserIcon from "./UserIcon";
 import SignOutLink from "./SignOutLink";
 import { SignInButton, SignUpButton, SignedIn, SignedOut } from "@clerk/nextjs";
