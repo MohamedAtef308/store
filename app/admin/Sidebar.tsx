@@ -13,7 +13,7 @@ function Sidebar() {
         <Button
           key={link.label}
           className="w-full mb-2 capitalize font-normal justify-start"
-          variant={pathname === link.href ? "ghost" : "default"}
+          variant={pathname === link.href ? "default" : "ghost"}
           asChild
         >
           <Link href={link.href}>{link.label}</Link>

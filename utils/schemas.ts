@@ -19,12 +19,30 @@ export const productSchema = z.object({
   featured: z.coerce.boolean(),
 });
 
+function validateImageFile() {
+  const maxUploadSize = 1024 * 1024;
+  const acceptedFileTypes = ["image/"];
+  return z
+    .instanceof(File)
+    .refine((file) => !file || file.size <= maxUploadSize, {
+      message: "File size must be less than 1 MB",
+    })
+    .refine(
+      (file) =>
+        !file || acceptedFileTypes.some((type) => file.type.startsWith(type)),
+      { message: "File must be an image" }
+    );
+}
 
 export function validateZodSchema<T>(schema: ZodSchema<T>, data: unknown): T {
-    const result = schema.safeParse(data);
-    if (!result.success) {
-        const errors = result.error.errors.map( (error)=> error.message);
-        throw new Error(errors.join(","))
-    }
-    return result.data;
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    const errors = result.error.errors.map((error) => error.message);
+    throw new Error(errors.join(","));
+  }
+  return result.data;
 }
+
+export const imageSchema = z.object({
+  image: validateImageFile(),
+});

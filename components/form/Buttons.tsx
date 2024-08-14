@@ -47,3 +47,28 @@ export function SubmitButton({
     </Button>
   );
 }
+
+type ActionType = "edit" | "delete";
+
+export function IconButton({actionType}: {actionType:ActionType}) {
+  const {pending} = useFormStatus();
+
+  const renderIcon = () => {
+    switch (actionType) {
+      case "edit":
+        return <LuPenSquare/>
+      case "delete":
+        return <LuTrash2/>
+      default:
+          throw new Error(`Invalid action type: ${actionType}`)
+    }
+  }
+
+  return (
+    <Button size="icon" type="submit" variant="link" className="p-2 cursor-pointer">
+      {
+        pending? <ReloadIcon className="animate-spin"/> : renderIcon()
+      }
+    </Button>
+  )
+}

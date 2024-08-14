@@ -3,7 +3,8 @@ import prisma from "./db";
 import { redirect } from "next/navigation";
 import { ActionFunction } from "./types";
 import { currentUser } from "@clerk/nextjs/server";
-import { productSchema, validateZodSchema } from "./schemas";
+import { imageSchema, productSchema, validateZodSchema } from "./schemas";
+import { revalidatePath } from "next/cache";
 
 const renderError = (error: unknown): { message: string } => {
   console.log(error);
@@ -44,6 +45,20 @@ export const fetchAllProducts = async ({ search = "" }: { search: string }) => {
   return products;
 };
 
+export const fetchAdminProducts = async () => {
+  const { id } = await getAuthUser();
+  const products = await prisma.products.findMany({
+    where: {
+      clerkId: id,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return products;
+};
+
 export const fetchSingleProduct = async (productId: string) => {
   const product = await prisma.products.findUnique({
     where: {
@@ -67,8 +82,12 @@ export const createProductAction: ActionFunction = async (
 
   try {
     const rawData = Object.fromEntries(formData);
-    
+    const image = formData.get("image") as File;
+
     const validated = validateZodSchema(productSchema, rawData);
+    const validatedImage = validateZodSchema(imageSchema, { image });
+
+    console.log(validatedImage);
 
     await prisma.products.create({
       data: {
@@ -78,6 +97,24 @@ export const createProductAction: ActionFunction = async (
       },
     });
     return { message: "product created" };
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+export const deleteProductAction = async (prevState: { productId: string }) => {
+  "use server"
+  const { productId } = prevState;
+
+  try {
+    await prisma.products.delete({
+      where: {
+        id: productId,
+      },
+    });
+
+    revalidatePath("/admin/products");
+    return { message: "product removed" };
   } catch (error) {
     return renderError(error);
   }
