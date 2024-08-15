@@ -1,8 +1,10 @@
+"use server";
+
 import { NextResponse } from "next/server";
 import prisma from "./db";
 import { redirect } from "next/navigation";
 import { ActionFunction } from "./types";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser, getAuth, User } from "@clerk/nextjs/server";
 import { imageSchema, productSchema, validateZodSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 
@@ -69,6 +71,71 @@ export const fetchSingleProduct = async (productId: string) => {
   return product;
 };
 
+export const fetchFavoriteId = async (productId: string) => {
+  const user = await getAuthUser();
+
+  const favorite = await prisma.favorite.findFirst({
+    where: {
+      productId,
+      clerkId: user.id,
+    },
+    select: {
+      id: true,
+    },
+  });
+  return favorite?.id || null;
+};
+
+export const toggleFavoriteAction: ActionFunction = async (
+  prevState,
+  formData
+) => {
+  const user = await getAuthUser();
+  const prevStateTyped = prevState as {
+    productId: string;
+    favoriteId: string | null;
+    pathname: string;
+  };
+  const { productId, favoriteId, pathname } = prevStateTyped;
+
+  try {
+    if (favoriteId) {
+      await prisma.favorite.delete({
+        where: {
+          id: favoriteId,
+        },
+      });
+    } else {
+      await prisma.favorite.create({
+        data: {
+          productId,
+          clerkId: user.id,
+        },
+      });
+    }
+    revalidatePath(pathname);
+    return {
+      message: favoriteId ? "Removed from favorites" : "Added to favorites",
+    };
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+export const fetchUserFavorites = async () => {
+  const user = await getAuthUser();
+
+  const favorites = await prisma.favorite.findMany({
+    where: {
+      clerkId: user.id,
+    },
+    include: {
+      product: true,
+    },
+  });
+  return favorites;
+};
+
 // ADMIN FUNCTIONS
 
 export const fetchAdminProducts = async () => {
@@ -86,7 +153,6 @@ export const createProductAction: ActionFunction = async (
   prevState,
   formData
 ) => {
-  "use server";
   const user = await getAdminUser();
 
   try {
@@ -112,7 +178,6 @@ export const createProductAction: ActionFunction = async (
 };
 
 export const deleteProductAction = async (prevState: { productId: string }) => {
-  "use server";
   const { productId } = prevState;
 
   try {
@@ -145,8 +210,6 @@ export const updateProductAction: ActionFunction = async (
   prevState: any,
   formData: FormData
 ) => {
-  "use server";
-
   await getAdminUser();
   try {
     const id = formData.get("id") as string;
@@ -172,7 +235,5 @@ export const updateProductImageAction: ActionFunction = async (
   prevState,
   formData
 ) => {
-  "use server";
-
   return { message: "Product image updated successfully" };
 };

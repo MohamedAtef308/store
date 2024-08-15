@@ -13,7 +13,7 @@ const images = [hero1, hero2, hero3, hero4]
 function HeroCarousel() {
   return (
     <div className="hidden lg:block">
-      <Carousel plugins={[Autoplay({delay: 3000, stopOnMouseEnter: true})]}>
+      <Carousel plugins={[Autoplay({delay: 2000, stopOnMouseEnter: true})]}>
         <CarouselContent>
           {images.map((image, index) => (
             <CarouselItem key={index}>
