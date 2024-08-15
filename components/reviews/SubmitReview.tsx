@@ -19,7 +19,7 @@ function SubmitReview( {productId}: SubmitReviewProps) {
     const [isReviewFormVisible, setIsReviewFormVisible] = useState(false);
 
     return (
-      <div>
+      <div className="mt-4">
         <Button
           size="lg"
           className="capitalize"

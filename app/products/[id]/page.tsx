@@ -49,11 +49,11 @@ async function SingleProductPage({ params }: SingleProductPageProps) {
             {product.description}
           </p>
           <AddToCart productId={params.id} />
+        <SubmitReview productId={params.id}/>
         </div>
 
-        <ProductReviews productId={params.id} />
-        <SubmitReview productId={params.id} />
       </div>
+        <ProductReviews productId={params.id} />
     </section>
   );
 }
