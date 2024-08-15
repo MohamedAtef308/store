@@ -1,11 +1,15 @@
 "use server";
 
-import { NextResponse } from "next/server";
 import prisma from "./db";
 import { redirect } from "next/navigation";
 import { ActionFunction } from "./types";
-import { currentUser, getAuth, User } from "@clerk/nextjs/server";
-import { imageSchema, productSchema, validateZodSchema } from "./schemas";
+import { currentUser } from "@clerk/nextjs/server";
+import {
+  imageSchema,
+  productSchema,
+  reviewSchema,
+  validateZodSchema,
+} from "./schemas";
 import { revalidatePath } from "next/cache";
 
 // UTILITY FUNCTIONS
@@ -135,6 +139,46 @@ export const fetchUserFavorites = async () => {
   });
   return favorites;
 };
+
+export const createReviewAction: ActionFunction = async (
+  prevState,
+  formData
+) => {
+  const user = await getAuthUser();
+
+  try {
+    const rawData = Object.fromEntries(formData);
+    const validated = validateZodSchema(reviewSchema, rawData);
+
+    await prisma.review.create({
+      data: {
+        ...validated,
+        clerkId: user.id,
+      },
+    });
+    revalidatePath(`/products/${validated.productId}`);
+    return { message: "Review added successfully" };
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+export const fetchProductReviews = async (productId: string) => {
+  const reviews = await prisma.review.findMany({
+    where: {
+      productId: productId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+  return reviews;
+};
+
+export const fetchProductReviewsByUser = async () => {};
+export const deleteReviewAction = async () => {};
+export const findExistingReview = async () => {};
+export const fetchProductRating = async () => {};
 
 // ADMIN FUNCTIONS
 

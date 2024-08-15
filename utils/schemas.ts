@@ -46,3 +46,24 @@ export function validateZodSchema<T>(schema: ZodSchema<T>, data: unknown): T {
 export const imageSchema = z.object({
   image: validateImageFile(),
 });
+
+export const reviewSchema = z.object({
+  productId: z
+    .string()
+    .refine((value) => value !== "", { message: "Product ID can't be empty" }),
+  authorName: z
+    .string()
+    .refine((value) => value !== "", { message: "Author name can't be empty" }),
+  authorImageUrl: z.string().refine((value) => value !== "", {
+    message: "Author image URL can't be empty",
+  }),
+  rating: z.coerce
+    .number()
+    .int()
+    .min(1, { message: "Rating can't be less than 1" })
+    .max(5, { message: "Rating can't be more than 5" }),
+  comment: z
+    .string()
+    .min(10, { message: "A comment cant be less than 10 characters long" })
+    .max(1000, { message: "A comment cant be more than 1000 characters long" }),
+});
