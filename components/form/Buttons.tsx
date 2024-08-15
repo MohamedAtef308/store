@@ -22,12 +22,7 @@ export function SubmitButton({
   text = "submit",
   size = "lg",
 }: SubmitButtonProps) {
-  const { pending,data } = useFormStatus();
-
-  useEffect( ()=> {
-    console.log(data);
-    
-  }, [data])
+  const { pending } = useFormStatus();
 
   return (
     <Button

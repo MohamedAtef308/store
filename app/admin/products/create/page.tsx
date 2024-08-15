@@ -18,7 +18,7 @@ function CreateProductPage() {
       <h1 className="text-2xl font-semibold mb-8 capitalize">create product</h1>
       <div className="border p-8 rounded-md">
         <FormContainer action={createProductAction}>
-          <div className="grid gap-4 md:grid-cols-2 m-y-4">
+          <div className="grid gap-4 md:grid-cols-2 my-4">
             <FormInput
               name="name"
               label="Product Name"

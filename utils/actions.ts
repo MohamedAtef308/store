@@ -6,6 +6,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { imageSchema, productSchema, validateZodSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 
+// UTILITY FUNCTIONS
+
 const renderError = (error: unknown): { message: string } => {
   console.log(error);
   return {
@@ -20,6 +22,14 @@ const getAuthUser = async () => {
   }
   return user;
 };
+
+const getAdminUser = async () => {
+  const user = await getAuthUser();
+  if (user.id !== process.env.ADMIN_ID) redirect("/");
+  return user;
+};
+
+// USER FUNCTIONS
 
 export const fetchFeaturedProducts = async () => {
   const products = await prisma.products.findMany({
@@ -45,20 +55,6 @@ export const fetchAllProducts = async ({ search = "" }: { search: string }) => {
   return products;
 };
 
-export const fetchAdminProducts = async () => {
-  const { id } = await getAuthUser();
-  const products = await prisma.products.findMany({
-    where: {
-      clerkId: id,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  return products;
-};
-
 export const fetchSingleProduct = async (productId: string) => {
   const product = await prisma.products.findUnique({
     where: {
@@ -73,12 +69,25 @@ export const fetchSingleProduct = async (productId: string) => {
   return product;
 };
 
+// ADMIN FUNCTIONS
+
+export const fetchAdminProducts = async () => {
+  await getAdminUser();
+  const products = await prisma.products.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return products;
+};
+
 export const createProductAction: ActionFunction = async (
   prevState,
   formData
 ) => {
   "use server";
-  const user = await getAuthUser();
+  const user = await getAdminUser();
 
   try {
     const rawData = Object.fromEntries(formData);
@@ -103,7 +112,7 @@ export const createProductAction: ActionFunction = async (
 };
 
 export const deleteProductAction = async (prevState: { productId: string }) => {
-  "use server"
+  "use server";
   const { productId } = prevState;
 
   try {
@@ -118,4 +127,52 @@ export const deleteProductAction = async (prevState: { productId: string }) => {
   } catch (error) {
     return renderError(error);
   }
+};
+
+export const fetchAdminProductDetails = async (productId: string) => {
+  await getAdminUser();
+  const product = await prisma.products.findUnique({
+    where: {
+      id: productId,
+    },
+  });
+
+  if (!product) redirect("/admin/products");
+  return product;
+};
+
+export const updateProductAction: ActionFunction = async (
+  prevState: any,
+  formData: FormData
+) => {
+  "use server";
+
+  await getAdminUser();
+  try {
+    const id = formData.get("id") as string;
+    const rawData = Object.fromEntries(formData);
+    const validated = validateZodSchema(productSchema, rawData);
+
+    await prisma.products.update({
+      where: {
+        id: id,
+      },
+      data: {
+        ...validated,
+      },
+    });
+    revalidatePath(`/admin/products/${id}/edit`);
+    return { message: "product updated successfully" };
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+export const updateProductImageAction: ActionFunction = async (
+  prevState,
+  formData
+) => {
+  "use server";
+
+  return { message: "Product image updated successfully" };
 };
