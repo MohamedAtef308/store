@@ -1,7 +1,7 @@
 'use client'
 import { useState } from "react"
 import SelectProductAmount from "./SelectProductAmount"
-import { Mode } from "@/utils/types"
+import { Mode } from "./SelectProductAmount"
 import FormContainer from "../form/FormContainer"
 import { SubmitButton } from "../form/Buttons"
 import { addToCartAction } from "@/utils/actions"

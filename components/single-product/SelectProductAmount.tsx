@@ -1,5 +1,9 @@
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "../ui/select";
-import { Mode } from "@/utils/types";
+
+export enum Mode {
+  SingleProduct = "singleProduct",
+  CartItem = "cartItem",
+}
 
 type SelectProductAmountProps = {
     mode: Mode.SingleProduct;

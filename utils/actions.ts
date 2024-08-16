@@ -344,6 +344,9 @@ export const updateCart = async (cart: Cart) => {
     include: {
       product: true,
     },
+    orderBy: {
+      createdAt: "asc"
+    }
   });
 
   let numItemsInCart = 0;
@@ -358,7 +361,7 @@ export const updateCart = async (cart: Cart) => {
   const shipping = cartTotal ? cart.shipping : 0;
   const orderTotal = cartTotal + tax + shipping;
 
-  await prisma.cart.update({
+  const currentCart = await prisma.cart.update({
     where: {
       id: cart.id,
     },
@@ -369,6 +372,7 @@ export const updateCart = async (cart: Cart) => {
       orderTotal,
     },
   });
+  return {cartItems, currentCart}
 };
 
 export const addToCartAction: ActionFunction = async (prevState, formData) => {
@@ -387,8 +391,6 @@ export const addToCartAction: ActionFunction = async (prevState, formData) => {
     return { message: "Cart updated successfully" };
   } catch (error) {
     return renderError(error);
-  } finally {
-    redirect("/cart");
   }
 };
 
