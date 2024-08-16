@@ -3,7 +3,7 @@
 import prisma from "./db";
 import { redirect } from "next/navigation";
 import { ActionFunction } from "./types";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import {
   imageSchema,
   productSchema,
@@ -11,8 +11,16 @@ import {
   validateZodSchema,
 } from "./schemas";
 import { revalidatePath } from "next/cache";
+import { type Cart } from "@prisma/client";
 
-// UTILITY FUNCTIONS
+// UTILITIES
+const includeProductClause = {
+  cartItems: {
+    include: {
+      product: true,
+    },
+  },
+};
 
 const renderError = (error: unknown): { message: string } => {
   console.log(error);
@@ -33,6 +41,49 @@ const getAdminUser = async () => {
   const user = await getAuthUser();
   if (user.id !== process.env.ADMIN_ID) redirect("/");
   return user;
+};
+
+const fetchProduct = async (productId: string) => {
+  const product = await prisma.products.findUnique({
+    where: { id: productId },
+  });
+  if (!product) {
+    throw new Error("Product not found");
+  }
+
+  return product;
+};
+
+const updateOrCreateCartItem = async (
+  productId: string,
+  cartId: string,
+  amount: number
+) => {
+  let cartItem = await prisma.cartItem.findFirst({
+    where: {
+      productId,
+      cartId,
+    },
+  });
+
+  if (cartItem) {
+    cartItem = await prisma.cartItem.update({
+      where: {
+        id: cartItem.id,
+      },
+      data: {
+        amount: cartItem.amount + amount,
+      },
+    });
+  } else {
+    cartItem = await prisma.cartItem.create({
+      data: {
+        amount,
+        productId,
+        cartId,
+      },
+    });
+  }
 };
 
 // USER FUNCTIONS
@@ -196,20 +247,23 @@ export const fetchProductReviewsByUser = async () => {
   return reviews;
 };
 
-export const deleteReviewAction:ActionFunction = async (prevState, formData) => {
-  const {reviewId} = prevState as {reviewId: string}
+export const deleteReviewAction: ActionFunction = async (
+  prevState,
+  formData
+) => {
+  const { reviewId } = prevState as { reviewId: string };
   const user = await getAuthUser();
-  
+
   try {
     await prisma.review.delete({
       where: {
         id: reviewId,
-        clerkId: user.id
-      }
-    })  
+        clerkId: user.id,
+      },
+    });
 
-    revalidatePath("/reviews")
-    return {message: "Review deleted successfully"}
+    revalidatePath("/reviews");
+    return { message: "Review deleted successfully" };
   } catch (error) {
     return renderError(error);
   }
@@ -219,9 +273,9 @@ export const findExistingReview = async (userId: string, productId: string) => {
   return prisma.review.findFirst({
     where: {
       productId,
-      clerkId: userId
-    }
-  })
+      clerkId: userId,
+    },
+  });
 };
 
 export const fetchProductRating = async (productId: string) => {
@@ -241,6 +295,151 @@ export const fetchProductRating = async (productId: string) => {
     avgRating: result[0]?._avg.rating?.toFixed(1) ?? 0,
     countRating: result[0]?._count.rating ?? 0,
   };
+};
+
+export const fetchCartItems = async () => {
+  const { userId } = auth();
+
+  const cart = await prisma.cart.findFirst({
+    where: {
+      clerkId: userId ?? "",
+    },
+    select: {
+      numItemsInCart: true,
+    },
+  });
+  return cart?.numItemsInCart || 0;
+};
+
+export const fetchOrCreateCart = async (
+  userId: string,
+  errorOnFailure: boolean = false
+) => {
+  let cart = await prisma.cart.findFirst({
+    where: {
+      clerkId: userId,
+    },
+    include: includeProductClause,
+  });
+  if (!cart && errorOnFailure) {
+    throw new Error("Cart not found");
+  }
+
+  if (!cart) {
+    cart = await prisma.cart.create({
+      data: {
+        clerkId: userId,
+      },
+      include: includeProductClause,
+    });
+  }
+  return cart;
+};
+
+export const updateCart = async (cart: Cart) => {
+  const cartItems = await prisma.cartItem.findMany({
+    where: {
+      cartId: cart.id,
+    },
+    include: {
+      product: true,
+    },
+  });
+
+  let numItemsInCart = 0;
+  let cartTotal = 0;
+
+  for (const item of cartItems) {
+    numItemsInCart += item.amount;
+    cartTotal += item.amount * item.product.price;
+  }
+
+  const tax = cart.tax * cartTotal;
+  const shipping = cartTotal ? cart.shipping : 0;
+  const orderTotal = cartTotal + tax + shipping;
+
+  await prisma.cart.update({
+    where: {
+      id: cart.id,
+    },
+    data: {
+      numItemsInCart,
+      cartTotal,
+      tax,
+      orderTotal,
+    },
+  });
+};
+
+export const addToCartAction: ActionFunction = async (prevState, formData) => {
+  const user = await getAuthUser();
+
+  try {
+    const productId = formData.get("productId") as string;
+    const amount = Number(formData.get("amount"));
+
+    await fetchProduct(productId);
+    const cart = await fetchOrCreateCart(user.id);
+
+    await updateOrCreateCartItem(productId, cart.id, amount);
+
+    await updateCart(cart);
+    return { message: "Cart updated successfully" };
+  } catch (error) {
+    return renderError(error);
+  } finally {
+    redirect("/cart");
+  }
+};
+
+export const removeCartItemAction: ActionFunction = async (
+  prevState,
+  formData
+) => {
+  const user = await getAuthUser();
+
+  try {
+    const cartItemId = formData.get("id") as string;
+    const cart = await fetchOrCreateCart(user.id, true);
+
+    await prisma.cartItem.delete({
+      where: {
+        id: cartItemId,
+        cartId: cart.id,
+      },
+    });
+
+    await updateCart(cart);
+    revalidatePath("/cart");
+
+    return { message: "Item removed from cart" };
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+export const updateCartItemAction = async (
+  amount: number,
+  cartItemId: string
+) => {
+  const user = await getAuthUser();
+
+  try {
+    const cart = await fetchOrCreateCart(user.id, true);
+
+    await prisma.cartItem.update({
+      where: {
+        id: cartItemId,
+        cartId: cart.id,
+      },
+      data: { amount },
+    });
+    await updateCart(cart);
+    revalidatePath("/cart");
+    return { message: "Cart updated" };
+  } catch (error) {
+    return renderError(error);
+  }
 };
 
 // ADMIN FUNCTIONS

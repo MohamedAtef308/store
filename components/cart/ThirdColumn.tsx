@@ -1,0 +1,48 @@
+"use client";
+
+import { useState } from "react";
+import SelectProductAmount from "../single-product/SelectProductAmount";
+import { Mode } from "@/utils/types";
+import FormContainer from "../form/FormContainer";
+import { SubmitButton } from "../form/Buttons";
+import { removeCartItemAction, updateCartItemAction } from "@/utils/actions";
+import { useToast } from "../ui/use-toast";
+import { ReloadIcon } from "@radix-ui/react-icons";
+import { Button } from "../ui/button";
+
+type ThirdColumnProps = {
+  id: string;
+  quantity: number;
+};
+
+function ThirdColumn({ id, quantity }: ThirdColumnProps) {
+  const [amount, setAmount] = useState(quantity);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleAmountChange = async (value: number) => {
+    setIsLoading(true);
+    toast({ description: "Calculating..." });
+    const result = await updateCartItemAction(value, id);
+    setAmount(value);
+    toast({ description: result.message });
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="md:ml-8">
+      <SelectProductAmount
+        amount={amount}
+        setAmount={handleAmountChange}
+        mode={Mode.CartItem}
+        isLoading={isLoading}
+      />
+      <FormContainer action={removeCartItemAction}>
+        <input type="hidden" name="id" value={id} />
+        <SubmitButton size="sm" className="mt-4" text="remove" />
+      </FormContainer>
+    </div>
+  );
+}
+
+export default ThirdColumn;
