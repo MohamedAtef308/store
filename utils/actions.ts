@@ -345,8 +345,8 @@ export const updateCart = async (cart: Cart) => {
       product: true,
     },
     orderBy: {
-      createdAt: "asc"
-    }
+      createdAt: "asc",
+    },
   });
 
   let numItemsInCart = 0;
@@ -372,7 +372,7 @@ export const updateCart = async (cart: Cart) => {
       orderTotal,
     },
   });
-  return {cartItems, currentCart}
+  return { cartItems, currentCart };
 };
 
 export const addToCartAction: ActionFunction = async (prevState, formData) => {
@@ -443,6 +443,51 @@ export const updateCartItemAction = async (
     return renderError(error);
   }
 };
+
+export const createOrderAction: ActionFunction = async (
+  prevState,
+  formData
+) => {
+  const user = await getAuthUser();
+
+  try {
+    const cart = await fetchOrCreateCart(user.id, true);
+
+    const order = await prisma.order.create({
+      data: {
+        clerkId: user.id,
+        products: cart.numItemsInCart,
+        orderTotal: cart.cartTotal,
+        tax: cart.tax,
+        shipping: cart.shipping,
+        email: user.emailAddresses[0].emailAddress,
+      },
+    });
+
+    await prisma.cart.delete({
+      where: {
+        id: cart.id,
+      },
+    });
+    return { message: "Order completed" };
+  } catch (error) {
+    return renderError(error);
+  }
+};
+
+export const fetchUserOrders = async () => {
+  const user = await getAuthUser();
+  const orders = prisma.order.findMany({
+    where: {
+      clerkId: user.id,
+      isPaid: true
+    },
+    orderBy: {
+      createdAt: "desc"
+    }
+  })
+  return orders
+}
 
 // ADMIN FUNCTIONS
 
@@ -545,3 +590,17 @@ export const updateProductImageAction: ActionFunction = async (
 ) => {
   return { message: "Product image updated successfully" };
 };
+
+export const fetchAdminOrders = async () => {
+  await getAdminUser();
+
+  const orders = await prisma.order.findMany({
+    where: {
+      isPaid: true
+    },
+    orderBy: {
+      createdAt: "desc"
+    }
+  })
+  return orders
+}
