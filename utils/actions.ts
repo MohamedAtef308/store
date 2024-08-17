@@ -12,6 +12,7 @@ import {
 } from "./schemas";
 import { revalidatePath } from "next/cache";
 import { type Cart } from "@prisma/client";
+import { deleteImage, uploadImage } from "./supabase";
 
 // UTILITIES
 const includeProductClause = {
@@ -521,12 +522,12 @@ export const createProductAction: ActionFunction = async (
     const validated = validateZodSchema(productSchema, rawData);
     const validatedImage = validateZodSchema(imageSchema, { image });
 
-    console.log(validatedImage);
+    const path = await uploadImage(validatedImage.image)
 
     await prisma.products.create({
       data: {
         ...validated,
-        image: "/images/product-1.jpg",
+        image: path,
         clerkId: user.id,
       },
     });
@@ -539,12 +540,15 @@ export const createProductAction: ActionFunction = async (
 export const deleteProductAction = async (prevState: { productId: string }) => {
   const { productId } = prevState;
 
+
   try {
-    await prisma.products.delete({
+    const product = await prisma.products.delete({
       where: {
         id: productId,
       },
     });
+
+    await deleteImage(product.image);
 
     revalidatePath("/admin/products");
     return { message: "product removed" };
