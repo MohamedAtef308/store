@@ -358,7 +358,8 @@ export const updateCart = async (cart: Cart) => {
     cartTotal += item.amount * item.product.price;
   }
 
-  const tax = cart.tax * cartTotal;
+  const tax = 0.1 * cartTotal;  
+  
   const shipping = cartTotal ? cart.shipping : 0;
   const orderTotal = cartTotal + tax + shipping;
 
@@ -385,9 +386,9 @@ export const addToCartAction: ActionFunction = async (prevState, formData) => {
 
     await fetchProduct(productId);
     const cart = await fetchOrCreateCart(user.id);
-
+    
     await updateOrCreateCartItem(productId, cart.id, amount);
-
+    
     await updateCart(cart);
     revalidatePath("/cart")
     return { message: "Cart updated successfully" };
@@ -446,50 +447,38 @@ export const updateCartItemAction = async (
   }
 };
 
-export const createOrderAction: ActionFunction = async (
-  prevState,
-  formData
-) => {
+export const createOrderAction = async (prevState: any, formData: FormData) => {
   const user = await getAuthUser();
   let orderId: null | string = null;
   let cartId: null | string = null;
-
   try {
-    const cart = await fetchOrCreateCart(user.id, true);
+    const cart = await fetchOrCreateCart(
+      user.id,
+      true,
+    );
     cartId = cart.id;
-
     await prisma.order.deleteMany({
       where: {
         clerkId: user.id,
-        isPaid: false
-      }
-    })
+        isPaid: false,
+      },
+    });
 
     const order = await prisma.order.create({
       data: {
         clerkId: user.id,
         products: cart.numItemsInCart,
-        orderTotal: cart.cartTotal,
+        orderTotal: cart.orderTotal,
         tax: cart.tax,
         shipping: cart.shipping,
         email: user.emailAddresses[0].emailAddress,
       },
     });
-
-    orderId = order.id
-
-    await prisma.cart.delete({
-      where: {
-        id: cart.id,
-      },
-    });
-
-    revalidatePath("/orders");
-    redirect(`/checkout?orderId=${orderId}&cartId=${cartId}`)
-    // return { message: "Order completed" };
+    orderId = order.id;
   } catch (error) {
     return renderError(error);
   }
+  redirect(`/checkout?orderId=${orderId}&cartId=${cartId}`);
 };
 
 export const fetchUserOrders = async () => {
