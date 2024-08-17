@@ -208,6 +208,7 @@ export const createReviewAction: ActionFunction = async (
       },
     });
     revalidatePath(`/products/${validated.productId}`);
+    revalidatePath("/reviews")
     return { message: "Review added successfully" };
   } catch (error) {
     return renderError(error);
@@ -388,6 +389,7 @@ export const addToCartAction: ActionFunction = async (prevState, formData) => {
     await updateOrCreateCartItem(productId, cart.id, amount);
 
     await updateCart(cart);
+    revalidatePath("/cart")
     return { message: "Cart updated successfully" };
   } catch (error) {
     return renderError(error);
@@ -449,9 +451,19 @@ export const createOrderAction: ActionFunction = async (
   formData
 ) => {
   const user = await getAuthUser();
+  let orderId: null | string = null;
+  let cartId: null | string = null;
 
   try {
     const cart = await fetchOrCreateCart(user.id, true);
+    cartId = cart.id;
+
+    await prisma.order.deleteMany({
+      where: {
+        clerkId: user.id,
+        isPaid: false
+      }
+    })
 
     const order = await prisma.order.create({
       data: {
@@ -464,12 +476,17 @@ export const createOrderAction: ActionFunction = async (
       },
     });
 
+    orderId = order.id
+
     await prisma.cart.delete({
       where: {
         id: cart.id,
       },
     });
-    return { message: "Order completed" };
+
+    revalidatePath("/orders");
+    redirect(`/checkout?orderId=${orderId}&cartId=${cartId}`)
+    // return { message: "Order completed" };
   } catch (error) {
     return renderError(error);
   }
