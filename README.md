@@ -26,6 +26,7 @@
 </details>
 
 ## 📑 About <a name="about"></a>
+
 - An e-commerce web application built using NextJS for both frontend and backend with the help of serverside rendering. Store showcases products in a simple and appealing design to attract customers with a useful admin dashboard to manage products and view sales.
 
 ## ⛏️ Built With <a name="built-with"></a>
@@ -39,7 +40,8 @@
 - [Clerk](https://clerk.com/)
 
 ## 🎥 Demo <a name="demo"></a>
-  [Youtube](https://www.youtube.com/watch?v=xxiF_0cE_80)
+
+[Youtube](https://www.youtube.com/watch?v=xxiF_0cE_80)
 
 ## 📷 Features <a name="features"></a>
 
@@ -114,13 +116,21 @@ $ cd store
 $ npm install
 ```
 
-4. **_Running on development mode_**
+3. **_ENV variables_**
+
+To get the .env please contact me on Discord
+
+- ID: 435042122635149312
+- username: ghost4247
+
+5. **_Running on development mode_**
 
 ```sh
 $ npm run dev
 ```
 
 ## ✍️ Contributors <a name="contributors"></a>
+
 <table align='center'> 
 <tr>
     <td align="center">
