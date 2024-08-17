@@ -42,6 +42,7 @@
 ## 🎥 Demo <a name="demo"></a>
 
 [Youtube](https://www.youtube.com/watch?v=xxiF_0cE_80)
+[Hosted on Vercel](https://store-psi-seven.vercel.app/)
 
 ## 📷 Features <a name="features"></a>
 
